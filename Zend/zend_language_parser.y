@@ -188,6 +188,7 @@ static YYSIZE_T zend_yytnamerr(char*, const char*);
 %token T_EMPTY      "empty (T_EMPTY)"
 %token T_HALT_COMPILER "__halt_compiler (T_HALT_COMPILER)"
 %token T_CLASS      "class (T_CLASS)"
+%token T_ENUM       "enum (T_ENUM)"
 %token T_TRAIT      "trait (T_TRAIT)"
 %token T_INTERFACE  "interface (T_INTERFACE)"
 %token T_EXTENDS    "extends (T_EXTENDS)"
@@ -229,6 +230,7 @@ static YYSIZE_T zend_yytnamerr(char*, const char*);
 
 %type <ast> top_statement namespace_name name statement function_declaration_statement
 %type <ast> class_declaration_statement trait_declaration_statement
+%type <ast> enum_declaration_statement enum_const_list enum_const
 %type <ast> interface_declaration_statement interface_extends_list
 %type <ast> group_use_declaration inline_use_declarations inline_use_declaration
 %type <ast> mixed_group_use_declaration use_declaration unprefixed_use_declaration
@@ -314,6 +316,7 @@ top_statement:
 		statement							{ $$ = $1; }
 	|	function_declaration_statement		{ $$ = $1; }
 	|	class_declaration_statement			{ $$ = $1; }
+	|	enum_declaration_statement	{ $$ = $1; }
 	|	trait_declaration_statement			{ $$ = $1; }
 	|	interface_declaration_statement		{ $$ = $1; }
 	|	T_HALT_COMPILER '(' ')' ';'
@@ -415,6 +418,7 @@ inner_statement:
 		statement { $$ = $1; }
 	|	function_declaration_statement 		{ $$ = $1; }
 	|	class_declaration_statement 		{ $$ = $1; }
+	| 	enum_declaration_statement		{ $$ = $1; }
 	|	trait_declaration_statement			{ $$ = $1; }
 	|	interface_declaration_statement		{ $$ = $1; }
 	|	T_HALT_COMPILER '(' ')' ';'
@@ -512,6 +516,32 @@ class_declaration_statement:
 		T_STRING extends_from implements_list backup_doc_comment '{' class_statement_list '}'
 			{ $$ = zend_ast_create_decl(ZEND_AST_CLASS, 0, $<num>2, $6, zend_ast_get_str($3), $4, $5, $8, NULL); }
 ;
+
+enum_declaration_statement:
+	T_ENUM { $<num>$ = CG(zend_lineno); }
+	T_STRING backup_doc_comment '{' enum_const_list '}'
+	{
+	  $6->attr = ZEND_ACC_PUBLIC;
+	  zend_ast *class_statement_list_wrapper = zend_ast_create_list(1, ZEND_AST_STMT_LIST, zend_normalize_enum_constants($6));
+	  $$ = zend_ast_create_decl(ZEND_AST_CLASS, ZEND_ACC_EXPLICIT_ABSTRACT_CLASS, $<num>2, $4, zend_ast_get_str($3), NULL, NULL, class_statement_list_wrapper, NULL);
+	}
+
+enum_const_list:
+		enum_const_list ',' enum_const { $$ = zend_ast_list_add($1, $3); }
+	|
+		enum_const { $$ = zend_ast_create_list(1, ZEND_AST_CLASS_CONST_DECL, $1); }
+
+enum_const:
+		identifier backup_doc_comment
+		{
+		  $$ = zend_ast_create(ZEND_AST_CONST_ELEM, $1, NULL, ($2 ? zend_ast_create_zval_from_str($2) : NULL));
+		}
+	|
+		identifier '=' T_LNUMBER backup_doc_comment
+		{
+		  $$ = zend_ast_create(ZEND_AST_CONST_ELEM, $1, $3, ($4 ? zend_ast_create_zval_from_str($4) : NULL));
+		}
+
 
 class_modifiers:
 		class_modifier 					{ $$ = $1; }

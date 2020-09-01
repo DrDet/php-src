@@ -756,6 +756,7 @@ zend_ast *zend_negate_num_string(zend_ast *ast);
 uint32_t zend_add_class_modifier(uint32_t flags, uint32_t new_flag);
 uint32_t zend_add_member_modifier(uint32_t flags, uint32_t new_flag);
 zend_bool zend_handle_encoding_declaration(zend_ast *ast);
+zend_ast *zend_normalize_enum_constants(zend_ast *enum_const_list);
 
 /* parser-driven code generators */
 void zend_do_free(znode *op1);

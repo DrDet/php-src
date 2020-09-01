@@ -5120,6 +5120,29 @@ void zend_compile_try(zend_ast *ast) /* {{{ */
 }
 /* }}} */
 
+zend_ast *zend_normalize_enum_constants(zend_ast *enum_const_list_ast_) /* {{{ */
+{
+    ZEND_ASSERT(enum_const_list_ast_->kind == ZEND_AST_CLASS_CONST_DECL);
+    zend_ast_list *enum_const_list_ast = zend_ast_get_list(enum_const_list_ast_);
+    zend_long enum_const_next_value = 0;
+    for (int i = 0; i < enum_const_list_ast->children; ++i) {
+        zend_ast *enum_const_ast = enum_const_list_ast->child[i];
+        ZEND_ASSERT(enum_const_ast->attr == ZEND_ACC_PUBLIC);
+        ZEND_ASSERT(enum_const_ast->kind == ZEND_AST_CONST_ELEM);
+        zend_ast *enum_const_init_ast = enum_const_ast->child[1];
+        if (enum_const_init_ast) {
+            zval *init_value = zend_ast_get_zval(enum_const_init_ast);
+            enum_const_next_value = Z_LVAL_P(init_value) + 1;
+        } else {
+            zval init_value;
+            ZVAL_LONG(&init_value, enum_const_next_value++);
+            enum_const_ast->child[1] = zend_ast_create_zval(&init_value);
+        }
+    }
+    return enum_const_list_ast_;
+}
+/* }}} */
+
 /* Encoding declarations must already be handled during parsing */
 zend_bool zend_handle_encoding_declaration(zend_ast *ast) /* {{{ */
 {

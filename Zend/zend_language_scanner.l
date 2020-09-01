@@ -1419,6 +1419,10 @@ NEWLINE ("\r"|"\n"|"\r\n")
 	RETURN_TOKEN(T_CLASS);
 }
 
+<ST_IN_SCRIPTING>"enum" {
+	RETURN_TOKEN(T_ENUM);
+}
+
 <ST_IN_SCRIPTING>"interface" {
 	RETURN_TOKEN(T_INTERFACE);
 }
